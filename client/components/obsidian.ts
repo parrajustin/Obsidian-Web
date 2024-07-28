@@ -19,6 +19,10 @@ export class ObsidianElement extends LitElement {
     .left-leaf {
       margin-left: 1px;
     }
+
+    .main {
+      flex: 1 0 auto;
+    }
   `;
 
   protected render() {
@@ -26,7 +30,7 @@ export class ObsidianElement extends LitElement {
       <div id="main-container">
         <web-left-ribbon class="left-ribbon"></web-left-ribbon>
         <web-left-leaf class="left-leaf"></web-left-leaf>
-        <main-body></main-body>
+        <main-body class="main"></main-body>
         <web-right-leaf></web-right-leaf>
       </div>
     `;

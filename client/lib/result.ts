@@ -55,11 +55,6 @@ export class ErrImpl<E> implements BaseResult<never, E> {
   readonly err!: true;
   readonly val!: E;
 
-  private readonly _stack!: string;
-
-  /** Additional data to add to error. */
-  public additionalData: string[] = [];
-
   constructor(val: E) {
     if (!(this instanceof ErrImpl)) {
       return new ErrImpl(val);
@@ -68,13 +63,6 @@ export class ErrImpl<E> implements BaseResult<never, E> {
     this.ok = false;
     this.err = true;
     this.val = val;
-
-    const stackLines = new Error().stack!.split("\n").slice(2);
-    if (stackLines && stackLines.length > 0 && stackLines[0]?.includes("ErrImpl")) {
-      stackLines.shift();
-    }
-
-    this._stack = stackLines.join("\n");
   }
 
   /**
@@ -94,7 +82,7 @@ export class ErrImpl<E> implements BaseResult<never, E> {
    * Throws if the value is an `Err`, with a message provided by the `Err`'s value.
    */
   unsafeUnwrap(): never {
-    throw new Error(`Error UnsafeUnwrap "${this.val}" from stack "${this.stack}"`);
+    throw new Error(`Error UnsafeUnwrap "${this.val}"`);
   }
 
   /**
@@ -123,16 +111,6 @@ export class ErrImpl<E> implements BaseResult<never, E> {
    */
   mapErr<E2>(mapper: (err: E) => E2): Err<E2> {
     return Err(mapper(this.val));
-  }
-
-  /** Add data to the additional data. */
-  addData(...data: string[]): this {
-    this.additionalData.push(...data);
-    return this;
-  }
-
-  get stack(): string | undefined {
-    return `${this}\n${this._stack}`;
   }
 }
 

@@ -23,7 +23,7 @@ export class WebLeftRibbon extends LitElement {
       position: absolute;
       background-color: #36364d;
       width: 44px;
-      height: 44px;
+      height: 39px;
       z-index: 0;
     }
     .header {

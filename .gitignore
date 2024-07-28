@@ -128,3 +128,8 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+# Remove generated files.
+public/index.js
+public/index.js.map
+public/meta.json

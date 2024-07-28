@@ -1,0 +1,23 @@
+{
+  "rootFolder": {
+    "type": "Folder",
+    "children": {
+      "trips": {
+        "type": "Folder",
+        "children": {
+          "2024": {
+            "type": "Folder",
+            "children": {
+              "Chinese New Year Trip.md": {
+                "type": "File",
+                "creationTime": 1721961689422,
+                "modificationTime": 1721961689422
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "plugins": ["obsidian-planner"]
+}

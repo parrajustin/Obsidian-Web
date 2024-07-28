@@ -1,0 +1,49 @@
+.itinerary {
+  width: 100%;
+}
+.itinerary-error {
+  font-weight: 700;
+  padding: 10em;
+  border: 1px solid #f00;
+}
+.itinerary-debug {
+  font-weight: 700;
+  padding: 10em;
+  border: 1px solid #0ff;
+}
+.itinerary-event {
+  border: 1px solid;
+  margin-bottom: 5px;
+  font-size: 0.8em;
+}
+.itinerary-event .name {
+  display: inline-block;
+  padding: 2px 5px;
+  margin: 5px;
+  border-radius: 5px;
+}
+.itinerary-event .date {
+  padding: 0px 5px;
+  display: inline-block;
+  font-style: italic;
+}
+.itinerary-event .tag-container {
+  font-style: italic;
+  padding: 0px;
+  margin: 0px;
+}
+.itinerary-event .tag {
+  float: right;
+  border-radius: 5px;
+  border: 1px solid;
+  padding: 2px 5px;
+  margin: 5px;
+}
+.markdown-rendered thead > tr > th, 
+.markdown-rendered tbody > tr > td {
+  overflow: visible;
+}
+.markdown-preview-view .fc table {
+  margin-bottom: 0px;
+}
+

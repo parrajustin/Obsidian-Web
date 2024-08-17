@@ -6,8 +6,13 @@ import "./components/web_ribbon";
 import "./components/web_left_leaf";
 import "./components/web_right_leaf";
 import "./components/main_body";
+
+// Import file systems.
+import "./api/implemented_file_systems";
 // import { SetApp } from "./store";
 import { initializeFirestore, persistentLocalCache } from "firebase/firestore";
+import store from "./store/store";
+import { replaceApp } from "./store/firebase/firebase_reducer";
 
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
@@ -27,6 +32,7 @@ const startFirestore = async () => {
   initializeFirestore(app, {
     localCache: persistentLocalCache(/*settings*/ {})
   });
+  store.dispatch(replaceApp(app));
   // await SetApp(app);
 };
 document.addEventListener("DOMContentLoaded", async () => {

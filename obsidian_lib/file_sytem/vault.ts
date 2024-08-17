@@ -1,9 +1,18 @@
+import type { FileSystemProvider } from "../../client/api/file_system_provider";
+import { GetFileSystemProvider } from "../../client/api/file_system_provider";
 import { Events } from "../events";
 import type { DataAdapter } from "./data_adapter";
 import type { DataWriteOptions } from "./data_write_options";
 import type { TAbstractFile } from "./t_abstract_file";
-import type { TFile } from "./t_file";
-import type { TFolder } from "./t_folder";
+import { TFile } from "./t_file";
+import { TFolder } from "./t_folder";
+import { NotFoundError, type StatusError } from "../../client/lib/status_error";
+import type { Result } from "../../client/lib/result";
+import { Err, Ok } from "../../client/lib/result";
+import { logFailure } from "../../client/api/logger/resultLogger";
+import { GetFileSystemNodeByPath } from "../../client/api/file_system_util";
+import type { FileSystem } from "../../client/file_system/file_system";
+import { ConvertToObsidianFolder, ValidatePathAnddGetParent } from "./conversion_util";
 
 /**
  * Work with files and folders stored inside a vault.
@@ -11,6 +20,53 @@ import type { TFolder } from "./t_folder";
  * @public
  */
 export class Vault extends Events {
+  protected fileCache = new Map<TFile, string>();
+  protected fileMap = new Map<string, TFile | TFolder>();
+
+  private constructor(
+    private fileSystemProvider: FileSystemProvider,
+    fileSystem: FileSystem
+  ) {
+    super();
+
+    const vaultFiles = ConvertToObsidianFolder(fileSystem.rootFolder, this, "/", null);
+    const iterateFolder = (folder: TFolder) => {
+      const children = folder.children;
+      for (const child of children) {
+        if (child instanceof TFile) {
+          this.fileMap.set(child.path, child);
+        }
+        if (child instanceof TFolder) {
+          this.fileMap.set(child.path, child);
+          iterateFolder(child);
+        }
+      }
+    };
+    iterateFolder(vaultFiles);
+  }
+
+  /** Create the app vault file system class using the API file system providers. */
+  static async CreateVault(fileSystemProviderName: string): Promise<Result<Vault, StatusError>> {
+    const fileSystemProvider = GetFileSystemProvider(fileSystemProviderName);
+    if (fileSystemProvider.none) {
+      return Err(
+        NotFoundError(`The file system provider "${fileSystemProviderName}" was not found.`)
+      );
+    }
+
+    const initResult = await fileSystemProvider.safeValue().init();
+    if (initResult.err) {
+      return initResult;
+    }
+
+    const fileSystemResult = fileSystemProvider.safeValue().getFileSystem();
+    if (fileSystemResult.err) {
+      return fileSystemResult;
+    }
+
+    return Ok(new Vault(fileSystemProvider.safeValue(), fileSystemResult.safeUnwrap()));
+  }
+
   /**
    * @public
    */
@@ -27,7 +83,13 @@ export class Vault extends Events {
    * Gets the name of the vault.
    * @public
    */
-  getName(): string;
+  public getName(): string {
+    const name = this.fileSystemProvider.getName();
+    if (name.err) {
+      logFailure(name, "Vault.getName");
+    }
+    return name.unwrapOr("NO NAME FOUND");
+  }
 
   /**
    * Get a file inside the vault at the given path.
@@ -36,7 +98,13 @@ export class Vault extends Events {
    * @param path
    * @public
    */
-  getFileByPath(path: string): TFile | null;
+  public getFileByPath(path: string): TFile | null {
+    const file = this.fileMap.get(path);
+    if (file instanceof TFolder || file === undefined) {
+      return null;
+    }
+    return file;
+  }
   /**
    * Get a folder inside the vault at the given path.
    * Returns `null` if the folder does not exist.
@@ -44,7 +112,13 @@ export class Vault extends Events {
    * @param path
    * @public
    */
-  getFolderByPath(path: string): TFolder | null;
+  public getFolderByPath(path: string): TFolder | null {
+    const folder = this.fileMap.get(path);
+    if (folder instanceof TFile || folder === undefined) {
+      return null;
+    }
+    return folder;
+  }
   /**
    * Get a file or folder inside the vault at the given path. To check if the return type is
    * a file, use `instanceof TFile`. To check if it is a folder, use `instanceof TFolder`.
@@ -52,13 +126,21 @@ export class Vault extends Events {
    * @returns the abstract file, if it's found.
    * @public
    */
-  getAbstractFileByPath(path: string): TAbstractFile | null;
+  public getAbstractFileByPath(path: string): TAbstractFile | null {
+    const abstractFile = this.fileMap.get(path);
+    if (abstractFile === undefined) {
+      return null;
+    }
+    return abstractFile;
+  }
 
   /**
    * Get the root folder of the current vault.
    * @public
    */
-  getRoot(): TFolder;
+  public getRoot(): TFolder {
+    return this.fileMap.get("/") as TFolder;
+  }
 
   /**
    * Create a new plaintext file inside the vault.
@@ -67,42 +149,122 @@ export class Vault extends Events {
    * @param options - (Optional)
    * @public
    */
-  create(path: string, data: string, options?: DataWriteOptions): Promise<TFile>;
+  public create(path: string, data: string, options?: DataWriteOptions): Promise<TFile> {
+    const enc = new TextEncoder(); // always utf-8
+    const arrayBufferData = enc.encode(data);
+    return this.createBinary(path, arrayBufferData, options);
+  }
   /**
    * Create a new binary file inside the vault.
    * @param path - Vault absolute path for the new file, with extension.
    * @param data - content for the new file.
-   * @param options - (Optional)
+   * @param _options - (Optional)
    * @throws Error if file already exists
    * @public
    */
-  createBinary(path: string, data: ArrayBuffer, options?: DataWriteOptions): Promise<TFile>;
+  public async createBinary(
+    path: string,
+    data: ArrayBuffer,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _options?: DataWriteOptions
+  ): Promise<TFile> {
+    const parent = ValidatePathAnddGetParent(path, this);
+    if (parent.err) {
+      throw new Error(logFailure(parent, `Vault.createBinary`));
+    }
+    if (this.fileMap.get(path) !== undefined) {
+      throw new Error("File alread exists.");
+    }
+
+    const result = await this.fileSystemProvider.writeFile(`/${path}`, data);
+    if (result.err) {
+      throw new Error(logFailure(result, `Vault.createBinary`));
+    }
+
+    const parentNode = parent.safeUnwrap();
+    const baseName = parentNode.fullName.split(".")[0] as string;
+    const extension = parentNode.fullName.split(".")[1];
+    const newFile = new TFile();
+    newFile.basename = baseName;
+    newFile.extension = extension ?? "";
+    newFile.name = parentNode.fullName;
+    newFile.parent = parentNode.parent;
+    let parentPath = `${parentNode.parentPath}/`;
+    if (parentNode.parent.isRoot()) {
+      parentPath = "";
+    }
+    newFile.path = `${parentPath}${parentNode.fullName}`;
+    newFile.stat = {
+      ctime: Date.now(),
+      mtime: Date.now(),
+      size: data.byteLength
+    };
+    newFile.vault = this;
+    return newFile;
+  }
   /**
    * Create a new folder inside the vault.
    * @param path - Vault absolute path for the new folder.
    * @throws Error if folder already exists
    * @public
    */
-  createFolder(path: string): Promise<TFolder>;
+  public async createFolder(path: string): Promise<TFolder> {
+    const parent = ValidatePathAnddGetParent(path, this);
+    if (parent.err) {
+      throw new Error(logFailure(parent, `Vault.createBinary`));
+    }
+    if (this.fileMap.get(path) !== undefined) {
+      throw new Error("File alread exists.");
+    }
+
+    const result = await this.fileSystemProvider.createFolder(`/${path}`);
+    if (result.err) {
+      throw new Error(logFailure(result, `Vault.createBinary`));
+    }
+
+    const parentNode = parent.safeUnwrap();
+    const newFolder = new TFolder(/*isRootFolder=*/ false, []);
+    newFolder.name = parent.safeUnwrap().fullName;
+    newFolder.parent = parent.safeUnwrap().parent;
+    let parentPath = `${parentNode.parentPath}/`;
+    if (parentNode.parent.isRoot()) {
+      parentPath = "";
+    }
+    newFolder.path = `${parentPath}${parent.safeUnwrap().fullName}`;
+    newFolder.vault = this;
+    return newFolder;
+  }
   /**
    * Read a plaintext file that is stored inside the vault, directly from disk.
    * Use this if you intend to modify the file content afterwards.
    * Use {@link Vault.cachedRead} otherwise for better performance.
    * @public
    */
-  read(file: TFile): Promise<string>;
+  public async read(file: TFile): Promise<string> {
+    const filePath = `/${file.path}`;
+    const readFile = await this.fileSystemProvider.readFile(filePath);
+    if (readFile.err) {
+      logFailure(readFile, `Vault.read(${file.path})`);
+      return "";
+    }
+    return readFile.safeUnwrap();
+  }
   /**
    * Read the content of a plaintext file stored inside the vault
    * Use this if you only want to display the content to the user.
    * If you want to modify the file content afterward use {@link Vault.read}
    * @public
    */
-  cachedRead(file: TFile): Promise<string>;
+  cachedRead(file: TFile): Promise<string> {
+    return this.read(file);
+  }
   /**
    * Read the content of a binary file stored inside the vault.
    * @public
    */
-  readBinary(file: TFile): Promise<ArrayBuffer>;
+  readBinary(file: TFile): Promise<ArrayBuffer> {
+    return this.read(file).then()
+  }
 
   /**
    * Returns an URI for the browser engine to use, for example to embed an image.
@@ -195,29 +357,13 @@ export class Vault extends Events {
    * Get all files in the vault.
    * @public
    */
-  getFiles(): TFile[];
-
-  /**
-   * Called when a file is created.
-   * This is also called when the vault is first loaded for each existing file
-   * If you do not wish to receive create events on vault load, register your event handler inside {@link Workspace.onLayoutReady}.
-   * @public
-   */
-  on(name: 'create', callback: (file: TAbstractFile) => any, ctx?: any): EventRef;
-  /**
-   * Called when a file is modified.
-   * @public
-   */
-  on(name: 'modify', callback: (file: TAbstractFile) => any, ctx?: any): EventRef;
-  /**
-   * Called when a file is deleted.
-   * @public
-   */
-  on(name: 'delete', callback: (file: TAbstractFile) => any, ctx?: any): EventRef;
-  /**
-   * Called when a file is renamed.
-   * @public
-   */
-  on(name: 'rename', callback: (file: TAbstractFile, oldPath: string) => any, ctx?: any): EventRef;
-
+  public getFiles(): TFile[] {
+    const files: TFile[] = [];
+    this.fileMap.forEach((node) => {
+      if (node instanceof TFile) {
+        files.push(node);
+      }
+    });
+    return files;
+  }
 }

@@ -1,17 +1,26 @@
 {
   "rootFolder": {
     "type": "Folder",
+    "name": "root",
+    "isRoot": true,
     "children": {
       "trips": {
         "type": "Folder",
+        "name": "trips",
         "children": {
           "2024": {
             "type": "Folder",
+            "name": "2024",
             "children": {
-              "Chinese New Year Trip.md": {
+              "trip.md": {
+                "name": "trip",
+                "extension": "md",
                 "type": "File",
-                "creationTime": 1721961689422,
-                "modificationTime": 1721961689422
+                "stats": {
+                  "ctime": 1721961689422,
+                  "mtime": 1721961689422,
+                  "size": 0
+                }
               }
             }
           }
@@ -19,5 +28,6 @@
       }
     }
   },
-  "plugins": ["obsidian-planner"]
+  "plugins": ["obsidian-planner"],
+  "name": "Geneology-Vault"
 }

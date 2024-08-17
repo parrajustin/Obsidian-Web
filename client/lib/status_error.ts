@@ -39,6 +39,7 @@ export enum ErrorCode {
 /** An error holder. */
 export class StatusError {
   private readonly stack_!: string;
+  private readonly additionalData = new Map<string, string>();
 
   constructor(
     /* The status error code. */
@@ -54,8 +55,21 @@ export class StatusError {
     this.stack_ = stackLines.join("\n");
   }
 
+  public setPayload(name: string, payload: string) {
+    this.additionalData.set(name, payload);
+  }
+
   public toString(): string {
-    return `[${new Date().toISOString()}] ${ErrorCode[this.errorCode]}: ${this.message} at stack:\n${this.stack_}`;
+    const data: string[] = [];
+    for (const entry of this.additionalData.entries()) {
+      data.push(`${entry[0]}: ${entry[1]}`);
+    }
+    return `[${new Date().toISOString()}] ${ErrorCode[this.errorCode]}: ${this.message} at stack:\n${this.stack_}${data.length > 0 ? `\n\n[Additional Data:]\n ${data.join("\n")}` : ""}`;
+  }
+
+  public with(func: (error: StatusError) => void): StatusError {
+    func(this);
+    return this;
   }
 }
 

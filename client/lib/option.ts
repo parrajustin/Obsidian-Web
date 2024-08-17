@@ -13,7 +13,7 @@ interface BaseOption<T> {
    * Calls `mapper` if the Option is `Some`, otherwise returns `None`.
    * This function can be used for control flow based on `Option` values.
    */
-  andThen<T2>(mapper: (val: T) => Option<T2>): Option<T2>;
+  andThen<T2>(mapper: ((val: T) => Option<T2>) | ((val: T) => T2)): Option<T2>;
 
   /**
    * Maps an `Option<T>` to `Option<U>` by applying a function to a contained `Some` value,
@@ -110,8 +110,12 @@ export class SomeImpl<T> implements BaseOption<T> {
    * Calls `mapper` if the Option is `Some`, otherwise returns `None`.
    * This function can be used for control flow based on `Option` values.
    */
-  andThen<T2>(mapper: (val: T) => Option<T2>): Option<T2> {
-    return mapper(this.val);
+  andThen<T2>(mapper: ((val: T) => Option<T2>) | ((val: T) => T2)): Option<T2> {
+    const result = mapper(this.val);
+    if (result instanceof SomeImpl || result instanceof NoneImpl) {
+      return result;
+    }
+    return Some(result);
   }
 
   /**

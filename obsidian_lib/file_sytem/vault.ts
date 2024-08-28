@@ -6,11 +6,10 @@ import type { DataWriteOptions } from "./data_write_options";
 import type { TAbstractFile } from "./t_abstract_file";
 import { TFile } from "./t_file";
 import { TFolder } from "./t_folder";
-import { NotFoundError, type StatusError } from "../../client/lib/status_error";
+import { NotFoundError, UnimplementedError, type StatusError } from "../../client/lib/status_error";
 import type { Result } from "../../client/lib/result";
 import { Err, Ok } from "../../client/lib/result";
 import { logFailure } from "../../client/api/logger/resultLogger";
-import { GetFileSystemNodeByPath } from "../../client/api/file_system_util";
 import type { FileSystem } from "../../client/file_system/file_system";
 import { ConvertToObsidianFolder, ValidatePathAnddGetParent } from "./conversion_util";
 
@@ -255,43 +254,78 @@ export class Vault extends Events {
    * If you want to modify the file content afterward use {@link Vault.read}
    * @public
    */
-  cachedRead(file: TFile): Promise<string> {
+  public async cachedRead(file: TFile): Promise<string> {
+    const cachedFile = this.fileCache.get(file);
+    if (cachedFile !== undefined) {
+      return cachedFile;
+    }
     return this.read(file);
   }
   /**
    * Read the content of a binary file stored inside the vault.
    * @public
    */
-  readBinary(file: TFile): Promise<ArrayBuffer> {
-    return this.read(file).then()
+  public async readBinary(file: TFile): Promise<ArrayBuffer> {
+    const filePath = `/${file.path}`;
+    const readFile = await this.fileSystemProvider.readFileAsBuffer(filePath);
+    if (readFile.err) {
+      logFailure(readFile, `Vault.read(${file.path})`);
+      return new ArrayBuffer(0);
+    }
+    return readFile.safeUnwrap();
   }
 
   /**
    * Returns an URI for the browser engine to use, for example to embed an image.
    * @public
    */
-  getResourcePath(file: TFile): string;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  getResourcePath(_file: TFile): string {
+    return "";
+  }
   /**
    * Deletes the file completely.
    * @param file - The file or folder to be deleted
    * @param force - Should attempt to delete folder even if it has hidden children
    * @public
    */
-  delete(file: TAbstractFile, force?: boolean): Promise<void>;
+  public async delete(file: TAbstractFile, force?: boolean): Promise<void> {
+    const filePath = `/${file.path}`;
+    if (file instanceof TFile) {
+      const result = await this.fileSystemProvider.deleteFile(filePath);
+      if (result.err) {
+        logFailure(result, `Vault.delete(${file.path}, ${force})`);
+      }
+    } else if (file instanceof TFolder) {
+      const result = await this.fileSystemProvider.deleteFolder(filePath);
+      if (result.err) {
+        logFailure(result, `Vault.delete(${file.path}, ${force})`);
+      }
+    }
+
+    return;
+  }
   /**
    * Tries to move to system trash. If that isn't successful/allowed, use local trash
    * @param file - The file or folder to be deleted
-   * @param system - Set to `false` to use local trash by default.
+   * @param _system - Set to `false` to use local trash by default.
    * @public
    */
-  trash(file: TAbstractFile, system: boolean): Promise<void>;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  public trash(file: TAbstractFile, _system: boolean): Promise<void> {
+    return this.delete(file);
+  }
   /**
    * Rename or move a file.
    * @param file - the file to rename/move
    * @param newPath - vault absolute path to move file to.
    * @public
    */
-  rename(file: TAbstractFile, newPath: string): Promise<void>;
+  public rename(file: TAbstractFile, newPath: string): Promise<void> {
+    const error = UnimplementedError("Function is not implemented");
+    logFailure(Err(error), `Vault.rename(${JSON.stringify(file)}, ${newPath})`);
+    throw new Error(error.toString());
+  }
   /**
    * Modify the contents of a plaintext file.
    * @param file - The file
@@ -299,7 +333,14 @@ export class Vault extends Events {
    * @param options - (Optional)
    * @public
    */
-  modify(file: TFile, data: string, options?: DataWriteOptions): Promise<void>;
+  public modify(file: TFile, data: string, options?: DataWriteOptions): Promise<void> {
+    const error = UnimplementedError("Function is not implemented");
+    logFailure(
+      Err(error),
+      `Vault.modify(${JSON.stringify(file)}, ${data}, ${JSON.stringify(options)})`
+    );
+    throw new Error(error.toString());
+  }
   /**
    * Modify the contents of a binary file.
    * @param file - The file
@@ -307,7 +348,14 @@ export class Vault extends Events {
    * @param options - (Optional)
    * @public
    */
-  modifyBinary(file: TFile, data: ArrayBuffer, options?: DataWriteOptions): Promise<void>;
+  public modifyBinary(file: TFile, data: ArrayBuffer, options?: DataWriteOptions): Promise<void> {
+    const error = UnimplementedError("Function is not implemented");
+    logFailure(
+      Err(error),
+      `Vault.modifyBinary(${JSON.stringify(file)}, ${data}, ${JSON.stringify(options)})`
+    );
+    throw new Error(error.toString());
+  }
   /**
    * Add text to the end of a plaintext file inside the vault.
    * @param file - The file
@@ -315,7 +363,14 @@ export class Vault extends Events {
    * @param options - (Optional)
    * @public
    */
-  append(file: TFile, data: string, options?: DataWriteOptions): Promise<void>;
+  public append(file: TFile, data: string, options?: DataWriteOptions): Promise<void> {
+    const error = UnimplementedError("Function is not implemented");
+    logFailure(
+      Err(error),
+      `Vault.append(${JSON.stringify(file)}, ${data}, ${JSON.stringify(options)})`
+    );
+    throw new Error(error.toString());
+  }
   /**
    * Atomically read, modify, and save the contents of a note.
    * @param file - the file to be read and modified.
@@ -324,35 +379,84 @@ export class Vault extends Events {
    * @returns string - the text value of the note that was written.
    * @public
    */
-  process(file: TFile, fn: (data: string) => string, options?: DataWriteOptions): Promise<string>;
+  public process(
+    file: TFile,
+    fn: (data: string) => string,
+    options?: DataWriteOptions
+  ): Promise<string> {
+    const error = UnimplementedError("Function is not implemented");
+    logFailure(
+      Err(error),
+      `Vault.process(${JSON.stringify(file)}, ${fn}, ${JSON.stringify(options)})`
+    );
+    throw new Error(error.toString());
+  }
   /**
    * Create a copy of the selected file.
    * @param file - The file
    * @param newPath - Vault absolute path for the new copy.
    * @public
    */
-  copy(file: TFile, newPath: string): Promise<TFile>;
+  public copy(file: TFile, newPath: string): Promise<TFile> {
+    const error = UnimplementedError("Function is not implemented");
+    logFailure(Err(error), `Vault.copy(${JSON.stringify(file)}, ${newPath})`);
+    throw new Error(error.toString());
+  }
   /**
    * Get all files and folders in the vault.
    * @public
    */
-  getAllLoadedFiles(): TAbstractFile[];
+  public getAllLoadedFiles(): TAbstractFile[] {
+    const files: TAbstractFile[] = [];
+    for (const file of this.fileMap) {
+      files.push(file[1]);
+    }
+    return files;
+  }
   /**
    * Get all folders in the vault.
    * @param includeRoot - Should the root folder (`/`) be returned
    * @public
    */
-  getAllFolders(includeRoot?: boolean): TFolder[];
+  getAllFolders(includeRoot?: boolean): TFolder[] {
+    const files: TFolder[] = [];
+    for (const file of this.fileMap) {
+      if (file[0] === "/" && !includeRoot) {
+        continue;
+      }
+      if (file[1] instanceof TFolder) {
+        files.push(file[1]);
+      }
+    }
+    return files;
+  }
 
   /**
    * @public
    */
-  static recurseChildren(root: TFolder, cb: (file: TAbstractFile) => any): void;
+  static recurseChildren(root: TFolder, cb: (file: TAbstractFile) => unknown): void {
+    for (const node of root.children) {
+      cb(node);
+
+      if (node instanceof TFolder) {
+        Vault.recurseChildren(node, cb);
+      }
+    }
+  }
   /**
    * Get all markdown files in the vault.
    * @public
    */
-  getMarkdownFiles(): TFile[];
+  getMarkdownFiles(): TFile[] {
+    const files: TFile[] = [];
+    for (const file of this.fileMap) {
+      if (file[1] instanceof TFile && file[0].endsWith(".md")) {
+        files.push(file[1]);
+      }
+    }
+    return files;
+  }
+
   /**
    * Get all files in the vault.
    * @public

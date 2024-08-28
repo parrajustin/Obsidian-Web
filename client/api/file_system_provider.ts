@@ -13,6 +13,11 @@ export abstract class FileSystemProvider {
   /** Gets the full file system layout. Guarantees at least the root folder. */
   abstract getFileSystem(): Result<FileSystem, StatusError>;
   /**
+   * Reads the full file data as an arraybuffer.
+   * @param path the full file path to the file to read with `/` at start.
+   */
+  abstract readFileAsBuffer(path: string): Promise<Result<ArrayBuffer, StatusError>>;
+  /**
    * Reads the full file data as a string.
    * @param path the full file path to the file to read with `/` at start.
    */

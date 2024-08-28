@@ -7,7 +7,14 @@ import { Ok } from "../lib/result";
 import type { StatusError } from "../lib/status_error";
 import type { FileSystemProvider } from "./file_system_provider";
 
-/** Gets the file system node for a given path. ("File" or "Folder") */
+/**
+ * Gets the file system node for a given path. ("File" or "Folder").
+ * - empty nodes in path are removed such as "/test//lol" => "/test/lol"
+ * - only errors are from file system provider `getFileSystem`.
+ * @param path the absolute file system path with leading "/"
+ * @param fileSystemProvider The underslying filesystem provider.
+ * @returns The result of trying to find the file system, if any.
+ */
 export function GetFileSystemNodeByPath(
   path: string,
   fileSystemProvider: FileSystemProvider

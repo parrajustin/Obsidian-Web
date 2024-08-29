@@ -1,6 +1,7 @@
 import { EventRef } from "./event_ref";
 
-type CallbackT = (...data: unknown[]) => unknown;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type CallbackT = (...data: any) => unknown;
 
 /**
  * Events registration system.

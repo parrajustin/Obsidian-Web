@@ -12,13 +12,43 @@ import { Err, Ok } from "../../client/lib/result";
 import { logFailure } from "../../client/api/logger/resultLogger";
 import type { FileSystem } from "../../client/file_system/file_system";
 import { ConvertToObsidianFolder, ValidatePathAnddGetParent } from "./conversion_util";
+import type { EventRef } from "../event_ref";
+
+interface VaultEvents {
+  /**
+   * Called when a file is created.
+   * This is also called when the vault is first loaded for each existing file
+   * If you do not wish to receive create events on vault load, register your event handler inside {@link Workspace.onLayoutReady}.
+   * @public
+   */
+  on(name: "create", callback: (file: TAbstractFile) => unknown, ctx?: unknown): EventRef;
+  /**
+   * Called when a file is modified.
+   * @public
+   */
+  on(name: "modify", callback: (file: TAbstractFile) => unknown, ctx?: unknown): EventRef;
+  /**
+   * Called when a file is deleted.
+   * @public
+   */
+  on(name: "delete", callback: (file: TAbstractFile) => unknown, ctx?: unknown): EventRef;
+  /**
+   * Called when a file is renamed.
+   * @public
+   */
+  on(
+    name: "rename",
+    callback: (file: TAbstractFile, oldPath: string) => unknown,
+    ctx?: unknown
+  ): EventRef;
+}
 
 /**
  * Work with files and folders stored inside a vault.
  * @see {@link https://docs.obsidian.md/Plugins/Vault}
  * @public
  */
-export class Vault extends Events {
+export class Vault extends Events implements VaultEvents {
   protected fileCache = new Map<TFile, string>();
   protected fileMap = new Map<string, TFile | TFolder>();
 

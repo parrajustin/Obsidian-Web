@@ -1,4 +1,4 @@
-import { WorkspaceContainer } from "./workspace_container";
+import type { WorkspaceContainer } from "./workspace_container";
 import { WorkspaceParent } from "./workspace_parent";
 
 /**

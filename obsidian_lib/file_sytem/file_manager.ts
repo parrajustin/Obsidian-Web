@@ -1,9 +1,15 @@
+import { LogCreateFailure } from "../../client/api/logger/resultLogger";
+import { UnimplementedError } from "../../client/lib/status_error";
+import type { DataWriteOptions } from "./data_write_options";
+import type { TAbstractFile } from "./t_abstract_file";
+import type { TFile } from "./t_file";
+import type { TFolder } from "./t_folder";
+
 /**
  * Manage the creation, deletion and renaming of files from the UI.
  * @public
  */
 export class FileManager {
-
   /**
    * Gets the folder that new files should be saved to, given the user's preferences.
    * @param sourcePath - The path to the current open/focused file,
@@ -13,7 +19,12 @@ export class FileManager {
    * used to infer what settings to use based on the path's extension.
    * @public
    */
-  getNewFileParent(sourcePath: string, newFilePath?: string): TFolder;
+  public getNewFileParent(sourcePath: string, newFilePath?: string): TFolder {
+    throw LogCreateFailure(
+      UnimplementedError(`Method not implemented`),
+      `FileManager.getNewFileParent(${sourcePath}, ${newFilePath})`
+    );
+  }
 
   /**
    * Rename or move a file safely, and update all links to it depending on the user's preferences.
@@ -21,7 +32,12 @@ export class FileManager {
    * @param newPath - the new path for the file
    * @public
    */
-  renameFile(file: TAbstractFile, newPath: string): Promise<void>;
+  public renameFile(file: TAbstractFile, newPath: string): Promise<void> {
+    throw LogCreateFailure(
+      UnimplementedError(`Method not implemented`),
+      `FileManager.renameFile(${JSON.stringify(file)}, ${newPath})`
+    );
+  }
 
   /**
    * Remove a file or a folder from the vault according the user's preferred 'trash'
@@ -29,7 +45,12 @@ export class FileManager {
    * @param file
    * @public
    */
-  trashFile(file: TAbstractFile): Promise<void>;
+  public trashFile(file: TAbstractFile): Promise<void> {
+    throw LogCreateFailure(
+      UnimplementedError(`Method not implemented`),
+      `FileManager.trashFile(${JSON.stringify(file)})`
+    );
+  }
   /**
    * Generate a markdown link based on the user's preferences.
    * @param file - the file to link to.
@@ -38,7 +59,17 @@ export class FileManager {
    * @param alias - The display text if it's to be different than the file name. Pass empty string to use file name.
    * @public
    */
-  generateMarkdownLink(file: TFile, sourcePath: string, subpath?: string, alias?: string): string;
+  public generateMarkdownLink(
+    file: TFile,
+    sourcePath: string,
+    subpath?: string,
+    alias?: string
+  ): string {
+    throw LogCreateFailure(
+      UnimplementedError(`Method not implemented`),
+      `FileManager.generateMarkdownLink(${JSON.stringify(file)}, ${sourcePath}, ${subpath}, ${alias}})`
+    );
+  }
 
   /**
    * Atomically read, modify, and save the frontmatter of a note.
@@ -53,7 +84,16 @@ export class FileManager {
    * @throws any errors that your callback function throws
    * @public
    */
-  processFrontMatter(file: TFile, fn: (frontmatter: any) => void, options?: DataWriteOptions): Promise<void>;
+  public async processFrontMatter(
+    file: TFile,
+    fn: (frontmatter: unknown) => void,
+    options?: DataWriteOptions
+  ): Promise<void> {
+    throw LogCreateFailure(
+      UnimplementedError(`Method not implemented`),
+      `FileManager.processFrontMatter(${JSON.stringify(file)}, ${fn}, ${JSON.stringify(options)}})`
+    );
+  }
 
   /**
    * Resolves a unique path for the attachment file being saved.
@@ -65,5 +105,13 @@ export class FileManager {
    * @returns Full path for where the attachment should be saved, according to the user's settings
    * @public
    */
-  getAvailablePathForAttachment(filename: string, sourcePath?: string): Promise<string>;
+  public async getAvailablePathForAttachment(
+    filename: string,
+    sourcePath?: string
+  ): Promise<string> {
+    throw LogCreateFailure(
+      UnimplementedError(`Method not implemented`),
+      `FileManager.getAvailablePathForAttachment(${filename}, ${sourcePath}})`
+    );
+  }
 }

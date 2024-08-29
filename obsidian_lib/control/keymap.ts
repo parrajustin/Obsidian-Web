@@ -1,9 +1,5 @@
+import { PaneType } from "../ui/pane_type";
 import type { Modifier, Scope } from "./scope";
-
-/**
- * @public
- */
-export type PaneType = "tab" | "split" | "window";
 
 /** @public */
 export type UserEvent = MouseEvent | KeyboardEvent | TouchEvent | PointerEvent;

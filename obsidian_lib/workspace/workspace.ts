@@ -1,15 +1,162 @@
+import type { Constructor, WorkspaceWindow } from "obsidian";
+import type { EventRef } from "../event_ref";
 import { Events } from "../events";
+import type { TFile } from "../file_sytem/t_file";
 import type { WorkspaceLeaf } from "./workspace_leaf";
 import type { WorkspaceMobileDrawer } from "./workspace_mobile_drawer";
 import type { WorkspaceRibbon } from "./workspace_ribbon";
 import type { WorkspaceRoot } from "./workspace_root";
 import type { WorkspaceSidedock } from "./workspace_sidedock";
+import type { TAbstractFile } from "../file_sytem/t_abstract_file";
+import type { Tasks } from "../tasks";
+import type { Menu } from "../ui/menu";
+import { SplitDirection } from "../ui/split_direction";
+import { PaneType } from "../ui/pane_type";
+import { WorkspaceParent } from "./workspace_parent";
+import { View } from "../view";
+import { MarkdownFileInfo } from "../ui/markdown_file_info";
+
+interface WorkspaceApi {
+  /**
+   * @public
+   */
+  on(
+    name: "quick-preview",
+    callback: (file: TFile, data: string) => unknown,
+    ctx?: unknown
+  ): EventRef;
+  /**
+   * @public
+   */
+  on(name: "resize", callback: () => unknown, ctx?: unknown): EventRef;
+
+  /**
+   * @public
+   */
+  on(
+    name: "active-leaf-change",
+    callback: (leaf: WorkspaceLeaf | null) => unknown,
+    ctx?: unknown
+  ): EventRef;
+  /**
+   * @public
+   */
+  on(name: "file-open", callback: (file: TFile | null) => unknown, ctx?: unknown): EventRef;
+
+  /**
+   * @public
+   */
+  on(name: "layout-change", callback: () => unknown, ctx?: unknown): EventRef;
+  /**
+   * @public
+   */
+  on(
+    name: "window-open",
+    callback: (win: WorkspaceWindow, window: Window) => unknown,
+    ctx?: unknown
+  ): EventRef;
+
+  /**
+   * @public
+   */
+  on(
+    name: "window-close",
+    callback: (win: WorkspaceWindow, window: Window) => unknown,
+    ctx?: unknown
+  ): EventRef;
+
+  // /**
+  //  * Triggered when the CSS of the app has changed.
+  //  * @public
+  //  */
+  // on(name: "css-change", callback: () => unknown, ctx?: unknown): EventRef;
+
+  /**
+   * Triggered when the user opens the context menu on a file.
+   * @public
+   */
+  on(
+    name: "file-menu",
+    callback: (menu: Menu, file: TAbstractFile, source: string, leaf?: WorkspaceLeaf) => unknown,
+    ctx?: unknown
+  ): EventRef;
+
+  /**
+   * Triggered when the user opens the context menu with multiple files selected in the File Explorer.
+   * @public
+   */
+  on(
+    name: "files-menu",
+    callback: (menu: Menu, files: TAbstractFile[], source: string, leaf?: WorkspaceLeaf) => unknown,
+    ctx?: unknown
+  ): EventRef;
+
+  /**
+   * Triggered when the user opens the context menu on an external URL.
+   * @public
+   */
+  on(name: "url-menu", callback: (menu: Menu, url: string) => unknown, ctx?: unknown): EventRef;
+
+  // /**
+  //  * Triggered when the user opens the context menu on an editor.
+  //  * @public
+  //  */
+  // on(
+  //   name: "editor-menu",
+  //   callback: (menu: Menu, editor: Editor, info: MarkdownView | MarkdownFileInfo) => unknown,
+  //   ctx?: unknown
+  // ): EventRef;
+
+  // /**
+  //  * Triggered when changes to an editor has been applied, either programmatically or from a user event.
+  //  * @public
+  //  */
+  // on(
+  //   name: "editor-change",
+  //   callback: (editor: Editor, info: MarkdownView | MarkdownFileInfo) => unknown,
+  //   ctx?: unknown
+  // ): EventRef;
+
+  // /**
+  //  * Triggered when the editor receives a paste event.
+  //  * Check for `evt.defaultPrevented` before attempting to handle this event, and return if it has been already handled.
+  //  * Use `evt.preventDefault()` to indicate that you've handled the event.
+  //  * @public
+  //  */
+  // on(
+  //   name: "editor-paste",
+  //   callback: (
+  //     evt: ClipboardEvent,
+  //     editor: Editor,
+  //     info: MarkdownView | MarkdownFileInfo
+  //   ) => unknown,
+  //   ctx?: unknown
+  // ): EventRef;
+
+  // /**
+  //  * Triggered when the editor receives a drop event.
+  //  * Check for `evt.defaultPrevented` before attempting to handle this event, and return if it has been already handled.
+  //  * Use `evt.preventDefault()` to indicate that you've handled the event.
+  //  * @public
+  //  */
+  // on(
+  //   name: "editor-drop",
+  //   callback: (evt: DragEvent, editor: Editor, info: MarkdownView | MarkdownFileInfo) => unknown,
+  //   ctx?: unknown
+  // ): EventRef;
+
+  /**
+   * Triggered when the app is about to quit. Not guaranteed to actually run.
+   * Perform some best effort cleanup here.
+   * @public
+   */
+  on(name: "quit", callback: (tasks: Tasks) => unknown, ctx?: unknown): EventRef;
+}
 
 /**
  * @public
  */
 export class Workspace extends Events {
-
   /**
    * @public
    */
@@ -90,7 +237,11 @@ export class Workspace extends Events {
   /**
    * @public
    */
-  createLeafBySplit(leaf: WorkspaceLeaf, direction?: SplitDirection, before?: boolean): WorkspaceLeaf;
+  createLeafBySplit(
+    leaf: WorkspaceLeaf,
+    direction?: SplitDirection,
+    before?: boolean
+  ): WorkspaceLeaf;
   /**
    * @public
    * @deprecated - You should use {@link Workspace.getLeaf|getLeaf(true)} instead which does the same thing.
@@ -105,7 +256,11 @@ export class Workspace extends Events {
   /**
    * @public
    */
-  duplicateLeaf(leaf: WorkspaceLeaf, leafType: PaneType | boolean, direction?: SplitDirection): Promise<WorkspaceLeaf>;
+  duplicateLeaf(
+    leaf: WorkspaceLeaf,
+    leafType: PaneTYpe | boolean,
+    direction?: SplitDirection
+  ): Promise<WorkspaceLeaf>;
   /**
    * @public
    * @deprecated - You should use {@link Workspace.getLeaf|getLeaf(false)} instead which does the same thing.
@@ -118,7 +273,7 @@ export class Workspace extends Events {
    *
    * @public
    */
-  getLeaf(newLeaf?: 'split', direction?: SplitDirection): WorkspaceLeaf;
+  getLeaf(newLeaf?: "split", direction?: SplitDirection): WorkspaceLeaf;
   /**
    * If newLeaf is false (or not set) then an existing leaf which can be navigated
    * is returned, or a new leaf will be created if there was no leaf available.
@@ -139,7 +294,9 @@ export class Workspace extends Events {
    * Only works on the desktop app.
    * @public
    */
-  moveLeafToPopout(leaf: WorkspaceLeaf, data?: WorkspaceWindowInitData): WorkspaceWindow;
+  moveLeafToPopout(leaf: WorkspaceLeaf, data?: WorkspaceWindowInitData): WorkspaceWindow {
+
+  }
 
   /**
    * Open a new popout window with a single new leaf and return that leaf.
@@ -150,17 +307,25 @@ export class Workspace extends Events {
   /**
    * @public
    */
-  openLinkText(linktext: string, sourcePath: string, newLeaf?: PaneType | boolean, openViewState?: OpenViewState): Promise<void>;
+  openLinkText(
+    linktext: string,
+    sourcePath: string,
+    newLeaf?: PaneType | boolean,
+    openViewState?: OpenViewState
+  ): Promise<void>;
   /**
    * Sets the active leaf
    * @param leaf - The new active leaf
    * @param params - Parameter object of whether to set the focus.
    * @public
    */
-  setActiveLeaf(leaf: WorkspaceLeaf, params?: {
+  setActiveLeaf(
+    leaf: WorkspaceLeaf,
+    params?: {
       /** @public */
       focus?: boolean;
-  }): void;
+    }
+  ): void;
   /**
    * @deprecated - function signature changed. Use other form instead
    * @public
@@ -207,12 +372,12 @@ export class Workspace extends Events {
    * Iterate through all leaves in the main area of the workspace.
    * @public
    */
-  iterateRootLeaves(callback: (leaf: WorkspaceLeaf) => any): void;
+  iterateRootLeaves(callback: (leaf: WorkspaceLeaf) => unknown): void;
   /**
    * Iterate through all leaves, including main area leaves, floating leaves, and sidebar leaves.
    * @public
    */
-  iterateAllLeaves(callback: (leaf: WorkspaceLeaf) => any): void;
+  iterateAllLeaves(callback: (leaf: WorkspaceLeaf) => unknown): void;
   /**
    * @public
    */
@@ -237,89 +402,4 @@ export class Workspace extends Events {
    * @public
    */
   updateOptions(): void;
-
-  /**
-   * @public
-   */
-  on(name: 'quick-preview', callback: (file: TFile, data: string) => any, ctx?: any): EventRef;
-  /**
-   * @public
-   */
-  on(name: 'resize', callback: () => any, ctx?: any): EventRef;
-
-  /**
-   * @public
-   */
-  on(name: 'active-leaf-change', callback: (leaf: WorkspaceLeaf | null) => any, ctx?: any): EventRef;
-  /**
-   * @public
-   */
-  on(name: 'file-open', callback: (file: TFile | null) => any, ctx?: any): EventRef;
-
-  /**
-   * @public
-   */
-  on(name: 'layout-change', callback: () => any, ctx?: any): EventRef;
-  /**
-   * @public
-   */
-  on(name: 'window-open', callback: (win: WorkspaceWindow, window: Window) => any, ctx?: any): EventRef;
-  /**
-   * @public
-   */
-  on(name: 'window-close', callback: (win: WorkspaceWindow, window: Window) => any, ctx?: any): EventRef;
-  /**
-   * Triggered when the CSS of the app has changed.
-   * @public
-   */
-  on(name: 'css-change', callback: () => any, ctx?: any): EventRef;
-  /**
-   * Triggered when the user opens the context menu on a file.
-   * @public
-   */
-  on(name: 'file-menu', callback: (menu: Menu, file: TAbstractFile, source: string, leaf?: WorkspaceLeaf) => any, ctx?: any): EventRef;
-  /**
-   * Triggered when the user opens the context menu with multiple files selected in the File Explorer.
-   * @public
-   */
-  on(name: 'files-menu', callback: (menu: Menu, files: TAbstractFile[], source: string, leaf?: WorkspaceLeaf) => any, ctx?: any): EventRef;
-
-  /**
-   * Triggered when the user opens the context menu on an external URL.
-   * @public
-   */
-  on(name: 'url-menu', callback: (menu: Menu, url: string) => any, ctx?: any): EventRef;
-  /**
-   * Triggered when the user opens the context menu on an editor.
-   * @public
-   */
-  on(name: 'editor-menu', callback: (menu: Menu, editor: Editor, info: MarkdownView | MarkdownFileInfo) => any, ctx?: any): EventRef;
-  /**
-   * Triggered when changes to an editor has been applied, either programmatically or from a user event.
-   * @public
-   */
-  on(name: 'editor-change', callback: (editor: Editor, info: MarkdownView | MarkdownFileInfo) => any, ctx?: any): EventRef;
-
-  /**
-   * Triggered when the editor receives a paste event.
-   * Check for `evt.defaultPrevented` before attempting to handle this event, and return if it has been already handled.
-   * Use `evt.preventDefault()` to indicate that you've handled the event.
-   * @public
-   */
-  on(name: 'editor-paste', callback: (evt: ClipboardEvent, editor: Editor, info: MarkdownView | MarkdownFileInfo) => any, ctx?: any): EventRef;
-  /**
-   * Triggered when the editor receives a drop event.
-   * Check for `evt.defaultPrevented` before attempting to handle this event, and return if it has been already handled.
-   * Use `evt.preventDefault()` to indicate that you've handled the event.
-   * @public
-   */
-  on(name: 'editor-drop', callback: (evt: DragEvent, editor: Editor, info: MarkdownView | MarkdownFileInfo) => any, ctx?: any): EventRef;
-
-  /**
-   * Triggered when the app is about to quit. Not guaranteed to actually run.
-   * Perform some best effort cleanup here.
-   * @public
-   */
-  on(name: 'quit', callback: (tasks: Tasks) => any, ctx?: any): EventRef;
-
 }

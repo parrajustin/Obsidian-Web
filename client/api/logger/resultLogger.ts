@@ -1,4 +1,4 @@
-import type { Err } from "../../lib/result";
+import { Err } from "../../lib/result";
 import type { StatusError } from "../../lib/status_error";
 
 /**
@@ -14,4 +14,9 @@ export function logFailure(fail: Err<StatusError>, context?: string): string {
   const logMessage = `${fullContext}${fail.val.toString()}`;
   console.error(logMessage);
   return logMessage;
+}
+
+export function LogCreateFailure(fail: StatusError, context?: string): Error {
+  logFailure(Err(fail), context);
+  return new Error(fail.toString());
 }
